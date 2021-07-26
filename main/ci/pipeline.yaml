@@ -1,0 +1,167 @@
+jobs:
+- name: compile-nextgen-xhaven-test-plan-executor
+  plan:
+  - params:
+      alert_type: started
+      channel: reed-notifications
+    put: slack-alert
+  - in_parallel:
+      steps:
+      - get: alpine-python3
+      - get: xhfw/core-repo
+        trigger: true
+  - config:
+      inputs:
+      - name: xhfw/core-repo
+      params:
+        BUILD_ENV: concourse
+        DEVELOPMENT_REPO: xhfw/core-repo
+        GHE_TOKEN: ((ghe.token))
+      platform: linux
+      run:
+        path: nextgen-xhaven-test-plan-executor-repo/ci/pylint.sh
+    image: alpine-python3
+    on_abort:
+      params:
+        alert_type: aborted
+        channel: reed-notifications
+      put: slack-alert
+    on_failure:
+      params:
+        alert_type: failed
+        channel: reed-notifications
+      put: slack-alert
+    on_success:
+      params:
+        alert_type: success
+        channel: reed-notifications
+      put: slack-alert
+    task: compile-nextgen-xhaven-test-plan-executor
+  serial: true
+- name: build-and-push-nextgen-xhaven-test-plan-executor-docker-image
+  plan:
+  - params:
+      alert_type: started
+      channel: reed-notifications
+    put: slack-alert
+  - get: nextgen-xhaven-test-plan-executor-repo
+    passed:
+    - compile-nextgen-xhaven-test-plan-executor
+    trigger: true
+  - on_abort:
+      params:
+        alert_type: aborted
+        channel: reed-notifications
+      put: slack-alert
+    on_failure:
+      params:
+        alert_type: failed
+        channel: reed-notifications
+      put: slack-alert
+    on_success:
+      params:
+        alert_type: success
+        channel: reed-notifications
+      put: slack-alert
+    params:
+      build: nextgen-xhaven-test-plan-executor-repo
+      build_args:
+        CONCOURSE_VERSION: 6.7.6
+        GHE_TOKEN: ((ghe.token))
+      dockerfile: nextgen-xhaven-test-plan-executor-repo/Dockerfile
+      tag_file: nextgen-xhaven-test-plan-executor-repo/ci/docker/version.txt
+    put: docker-hub-image
+  serial: true
+- name: deploy-nextgen-xhaven-test-plan-executor-docker-image-to-cloudfoundry
+  plan:
+  - params:
+      alert_type: started
+      channel: reed-notifications
+    put: slack-alert
+  - get: nextgen-xhaven-test-plan-executor-repo
+    passed:
+    - build-and-push-nextgen-xhaven-test-plan-executor-docker-image
+    trigger: true
+  - on_abort:
+      params:
+        alert_type: aborted
+        channel: reed-notifications
+      put: slack-alert
+    on_failure:
+      params:
+        alert_type: failed
+        channel: reed-notifications
+      put: slack-alert
+    on_success:
+      params:
+        alert_type: success
+        channel: reed-notifications
+      put: slack-alert
+    params:
+      app_name: nextgen-xhaven-test-plan-executor
+      command: push
+      disk_quota: 2G
+      docker_image: hub.comcast.net/atx-automation/nextgen-xhaven-test-plan-executor:1.0.0-beta
+      domain: ame1-b2.cf.comcast.net
+      environment_variables:
+        AWS_ACCESS_KEY_ID: ((service-user.aws-access-key))
+        AWS_DEFAULT_REGION: us-east-2
+        AWS_SECRET_ACCESS_KEY: ((service-user.aws-secret-access-key))
+        CF_API: https://api.ame1-g2.cf.comcast.net
+        CF_ORG: xhaven-prod
+        CF_SPACE: nextgen-xhaven-test-plan-executor
+        PROXY_SERVICE: xhaven-proxy
+        SERVICE_USER_NAME: ((ghe.user))
+        SERVICE_USER_PASSWORD: ((ghe.textPassword))
+      memory: 1G
+    put: cf-push
+    resource: cloudfoundry-resource
+  serial: true
+resource_types:
+- name: cf-cli-resource
+  source:
+    repository: nulldriver/cf-cli-resource
+    tag: latest
+  type: registry-image
+- name: docker-image-resource
+  privileged: true
+  source:
+    repository: concourse/docker-image-resource
+  type: docker-image
+- name: slack-notification
+  source:
+    repository: arbourd/concourse-slack-alert-resource
+  type: docker-image
+resources:
+- name: alpine-python3
+  source:
+    repository: frolvlad/alpine-python3
+    tag: latest
+  type: docker-image-resource
+- name: cloudfoundry-resource
+  source:
+    api: https://api.ame1-g2.cf.comcast.net
+    org: xhaven-prod
+    password: ((ghe.textPassword))
+    skip_cert_check: true
+    space: nextgen-xhaven-test-plan-executor
+    username: ((ghe.user))
+  type: cf-cli-resource
+- name: docker-hub-image
+  source:
+    password: ((ghe.textPassword))
+    repository: hub.comcast.net/atx-automation/nextgen-xhaven-test-plan-executor
+    username: ((ghe.user))
+  type: docker-image-resource
+- check_every: 1m
+  name: nextgen-xhaven-test-plan-executor-repo
+  source:
+    branch: XHAVEN-4562
+    password: ((ghe.password))
+    uri: https://github.comcast.com/atx-automation/NextGen-XHAVEN-test-plan-executor.git
+    username: ((ghe.user))
+  type: git
+- name: slack-alert
+  source:
+    url: ((slack_url))
+  type: slack-notification
