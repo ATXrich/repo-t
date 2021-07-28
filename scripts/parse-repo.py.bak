@@ -1,0 +1,56 @@
+# # !/usr/bin/env python3
+
+
+
+
+
+import json
+import sys
+import subprocess
+import re
+
+
+pretty_format = '{"commit": "%H", "subject": "%s", "body": "%b", "author": {"name": "%aN", "email": "%aE", "date": "%aD"}, "commiter": {"name": "%cN", "email": "%cE", "date": "%cD"}}'
+
+
+sample_log = '{"subject": "XHFW-2272: sync state request causes infinite loop of request", "body": "Reason for change: This is the reason for the change. Test Procedure: Zith test steps go here. Risks: None Change-Id: Iba3e4b684aa312ad90517e532356fcbf30ee3bd6", "author": { "name": "Naeem Khan","email": "naeem_khan@comcast.com","date": "Thu, 17 Jun 2021 14:34:29 -0400"}, "commiter": { "name": "Thomas Lea", "email": "Thomas_Lea@comcast.com","date": "Wed, 30 Jun 2021 11:00:38 +0000"}}'
+sample_log1 = '{"subject": "XHFW-2272: sync state request causes infinite loop of request", "body": "Reason for change: Test Procedure: Zith test steps go here. Risks: None Change-Id: Iba3e4b684aa312ad90517e532356fcbf30ee3bd6", "author": { "name": "Naeem Khan","email": "naeem_khan@comcast.com","date": "Thu, 17 Jun 2021 14:34:29 -0400"}, "commiter": { "name": "Thomas Lea", "email": "Thomas_Lea@comcast.com","date": "Wed, 30 Jun 2021 11:00:38 +0000"}}'
+sample_log2 = '{"subject": "", "body": "Test Procedure: Zith test steps go here. Risks: None Change-Id: Iba3e4b684aa312ad90517e532356fcbf30ee3bd6", "author": { "name": "Naeem Khan","email": "naeem_khan@comcast.com","date": "Thu, 17 Jun 2021 14:34:29 -0400"}, "commiter": { "name": "Thomas Lea", "email": "Thomas_Lea@comcast.com","date": "Wed, 30 Jun 2021 11:00:38 +0000"}}'
+sample_log3 = '{"subject": "", "body": "", "author": { "name": "Naeem Khan","email": "naeem_khan@comcast.com","date": "Thu, 17 Jun 2021 14:34:29 -0400"}, "commiter": { "name": "Thomas Lea", "email": "Thomas_Lea@comcast.com","date": "Wed, 30 Jun 2021 11:00:38 +0000"}}'
+
+
+def set_attribute(git_log, pattern, log_location):
+    attribute = re.search(pattern, git_log[log_location])
+    if attribute != None:
+        return attribute.group(1)
+    else:
+        return ''
+
+
+def build_json_output(git_log):
+    git_log['jira_id'] = set_attribute(git_log, r'(XHFW-\d+)', 'subject')
+    git_log['reason_for_change'] = set_attribute(git_log, r'[c|C]hange:\s(.+)\sTest', 'body')
+    git_log['test_procedure'] = set_attribute(git_log, r'[p|P]rocedure:\s(.+)\s[r|R]isks', 'body')
+    git_log['risks'] = set_attribute(git_log,  r'[r|R]isks:\s(.+)\s[c|C]hange', 'body')
+    git_log['change_id'] = set_attribute(git_log, r'[c|C]hange-[i|I]d:\s(.+)', 'body')  
+        
+    print(git_log)
+
+    # return json.dumps(git_log)
+
+
+
+
+process = subprocess.run(['git','pull'], capture_output=True, text=True)
+if process.returncode != 0:
+    print(f'error: {process.stderr}')
+    sys.exit(process.returncode)
+else:
+    # fetch last commit
+    process = subprocess.run(['git','log','-n','1',f'--pretty=format:{pretty_format}'], capture_output=True, text=True)
+
+    #TODO: build json payload
+    git_log = build_json_output(json.loads(sample_log3)) #process.stdout))
+
+
+#TODO: upload to dynamo
