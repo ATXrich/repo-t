@@ -50,32 +50,29 @@ def build_json_output(git_log):
     changed_files = subprocess.run([f'git show --pretty="format:" --name-only {git_log["commit"]}'], shell=True, capture_output=True, text=True)
     git_log['files'] = changed_files.stdout.splitlines()
 
-
-
-    print(git_log)
-
-    
-    # print(files_in_git_log.stdout)
-
-    # return json.dumps(git_log)
+    return json.dumps(git_log)
 
 
 
 
 
 
-process = subprocess.run(['git pull'], shell=True, capture_output=True, text=True)
-if process.returncode != 0:
-    print(f'error: {process.stderr}')
-    sys.exit(process.returncode)
+# process = subprocess.run(['git pull'], shell=True, capture_output=True, text=True)
+# if process.returncode != 0:
+#     print(f'error: {process.stderr}')
+#     sys.exit(process.returncode)
+# else:
+# capture git logs in the past 24 hours
+git_logs = subprocess.run(f'git log --since="1 hour ago" --format={format}', shell=True, capture_output=True, text=True).stdout.splitlines()
+# print(git_logs)
+if len(git_logs) > 0:
+    for log in git_logs:
+        #TODO: build json payload
+        payload = build_json_output(json.loads(log))
+
+        print(f'To be sent to DynamoDB: {payload} ({type(payload)})')
 else:
-    # capture git logs in the past 24 hours
-    git_logs = subprocess.run(f'git log --since="24 hours ago" --format={format}', shell=True, capture_output=True, text=True).stdout.splitlines()
-    # print(git_logs)
-    if len(git_logs) > 0:
-        for log in git_logs:
-            #TODO: build json payload
-            payload = build_json_output(json.loads(log))
+    print("No new commits in last 24 hours")
         
 
 
