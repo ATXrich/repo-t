@@ -1,2 +1,3 @@
 scripts/venv/
-/local/
+local/
+__pycache__
