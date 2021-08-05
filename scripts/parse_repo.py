@@ -54,7 +54,6 @@ def build_dynamodb_item(git_log):
 
 def search_git_log(regex, output):
     try:
-        print(output)
         result = re.search(regex, output).group(1)
         return result
     except AttributeError:
