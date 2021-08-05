@@ -13,15 +13,19 @@ class TestParseRepo(unittest.TestCase):
             input: List[str]
             expected: str
 
-        regex = r'([a-zA-Z]+-\d+)'
+        jira_regex = r'([a-zA-Z]+-\d+)'
+        build_regex =r'release/(\d.+\d)'
+        branch_regex =r'branch\s(.+)'
         testcases = [
-            TestCase(name='Empty subject', input=[regex, ''], expected=''),
-            TestCase(name='Title Jira ID', input=[regex, 'Xhfw-1234: This is a test'], expected='XHFW-1234'),
-            TestCase(name='lower Jira ID', input=[regex, 'xhfw-1234: This is a test'], expected='XHFW-1234'),
-            TestCase(name='UPPER Jira ID', input=[regex, 'XHFW-1234: This is a test'], expected='XHFW-1234'),
-            TestCase(name='no Jira ID', input=[regex, 'unit test file'], expected=''),
-            TestCase(name='Partial Jira ID', input=[regex, 'XH1245 - unit test file'], expected=''),
-            TestCase(name='No colon', input=[regex, 'XHFW-1234 unit test file'], expected='XHFW-1234'),
+            TestCase(name='JIRA-ID: EMPTY SUBJECT', input=[jira_regex, ''], expected=''),
+            TestCase(name='JIRA-ID: TITLE JIRA ID', input=[jira_regex, 'Xhfw-1234: This is a test'], expected='XHFW-1234'),
+            TestCase(name='JIRA-ID: LOWER JIRA ID', input=[jira_regex, 'xhfw-1234: This is a test'], expected='XHFW-1234'),
+            TestCase(name='JIRA-ID: UPPER JIRA ID', input=[jira_regex, 'XHFW-1234: This is a test'], expected='XHFW-1234'),
+            TestCase(name='JIRA-ID: NO JIRA ID', input=[jira_regex, 'This is a test'], expected=''),
+            TestCase(name='JIRA-ID: PARTIAL JIRA ID', input=[jira_regex, 'XH1245: This is a test'], expected=''),
+            TestCase(name='JIRA-ID: NO COLON', input=[jira_regex, 'XHFW-1234 This is a test'], expected='XHFW-1234'),
+            TestCase(name='', input=[], expected='')
+            TestCase(name='', input=[], expected='')
         ]
 
         for case in testcases:

@@ -10,7 +10,7 @@ format = '\'{"commit": "%h", "date": "%ad", "subject": "%s", "body": "%b", "auth
 def parse_git_logs():
     # capture git commits 24 hours ago
     git_logs = subprocess.run(
-        f'git log -n 1 --since="24 hours ago" --format={format}', 
+        f'git log --since="24 hours ago" --format={format}', 
         shell=True, capture_output=True, text=True).stdout.splitlines()
 
     # build payload for dynamodb
@@ -33,10 +33,11 @@ def build_dynamodb_item(git_log):
     dynamodb_item = {}
 
     # add Jira ID to log
-    git_log['jira_id'] = search_git_log(r'([a-zA-Z]+-\d+)', git_log['subject']).upper()
+    # git_log['jira_id'] = search_git_log(r'([a-zA-Z]+-\d+)', git_log['subject']).upper()
     
     # add build and branch to log
     process = subprocess.run([f'git status'], shell=True, capture_output=True, text=True)
+    print(process.stdout)
     dynamodb_item['build_number'] = search_git_log(r'release/(\d.+\d)', process.stdout)
     dynamodb_item['branch_name'] = search_git_log(r'branch\s(.+)', process.stdout)
     
