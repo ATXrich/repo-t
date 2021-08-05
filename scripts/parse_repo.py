@@ -6,10 +6,11 @@ import boto3
 
 format = '\'{"commit": "%h", "date": "%ad", "subject": "%s", "body": "%b", "author": {"name": "%aN", "email": "%aE"}}\''
 
+
 def parse_git_logs():
-# capture git commits 24 hours ago
+    # capture git commits 24 hours ago
     git_logs = subprocess.run(
-        f'git log --since="24 hours ago" --format={format}', 
+        f'git log -n 1 --since="24 hours ago" --format={format}', 
         shell=True, capture_output=True, text=True).stdout.splitlines()
 
     # build payload for dynamodb
@@ -26,14 +27,6 @@ def parse_git_logs():
         
     else:
         print("No new commits in last 24 hours.")
-
-
-def search_git_log(regex, output):
-    try:
-        result = re.search(regex, output).group(1)
-        return result
-    except AttributeError:
-        return ''
 
 
 def build_dynamodb_item(git_log):
@@ -57,6 +50,15 @@ def build_dynamodb_item(git_log):
     dynamodb_item['git_logs'] = git_log
 
     return dynamodb_item
+
+
+def search_git_log(regex, output):
+    try:
+        print(output)
+        result = re.search(regex, output).group(1)
+        return result
+    except AttributeError:
+        return ''
 
 
 def write_to_dynamodb(payload):
