@@ -1,11 +1,54 @@
-https://hub.docker.com/r/matbain/gerrit-resource
+resource_types:
+- name: docker-image-resource
+  privileged: true
+  source:
+    repository: concourse/docker-image-resource
+  type: docker-image
+- name: slack-notification
+  source:
+    repository: arbourd/concourse-slack-alert-resource
+  type: docker-image
+- name: gerrit
+  source:
+    repository: malston/gerrit-resource
+  type: docker-image
 
+resources:
 
+- name: alpine-python3
+  source:
+    repository: frolvlad/alpine-python3
+    tag: latest
+  type: docker-image-resource
+- name: xhfw/core-repo
+  type: git
+  source:
+    uri: rreed210@rdkgerrithub.stb.r53.xcal.tv/a/xhfw/core
+    branch: master
+    username: rreed210
+    password: 
+    # git_config:
+    # - name: core.bigFileThreshold
+    #   value: 10m
+    disable_ci_skip: true
+# - check_every: 1m
+#   name: nextgen-xhaven-test-plan-executor-repo
+#   source:
+#     branch: XHAVEN-4562
+#     password: ((ghe.password))
+#     uri: https://github.comcast.com/atx-automation/NextGen-XHAVEN-test-plan-executor.git
+#     username: ((ghe.user))
+#   type: git
+# - name: slack-alert
+#   source:
+#     url: ((slack_url))
+#   type: slack-notification
 
 
 
 jobs:
-- name: compile-nextgen-xhaven-test-plan-executor
+
+  - name: compile-nextgen-xhaven-test-plan-executor
   plan:
   - params:
       alert_type: started
@@ -15,7 +58,6 @@ jobs:
       steps:
       - get: alpine-python3
       - get: xhfw/core-repo
-        trigger: true
   - config:
       inputs:
       - name: xhfw/core-repo
@@ -123,51 +165,3 @@ jobs:
     put: cf-push
     resource: cloudfoundry-resource
   serial: true
-resource_types:
-- name: cf-cli-resource
-  source:
-    repository: nulldriver/cf-cli-resource
-    tag: latest
-  type: registry-image
-- name: docker-image-resource
-  privileged: true
-  source:
-    repository: concourse/docker-image-resource
-  type: docker-image
-- name: slack-notification
-  source:
-    repository: arbourd/concourse-slack-alert-resource
-  type: docker-image
-resources:
-- name: alpine-python3
-  source:
-    repository: frolvlad/alpine-python3
-    tag: latest
-  type: docker-image-resource
-- name: cloudfoundry-resource
-  source:
-    api: https://api.ame1-g2.cf.comcast.net
-    org: xhaven-prod
-    password: ((ghe.textPassword))
-    skip_cert_check: true
-    space: nextgen-xhaven-test-plan-executor
-    username: ((ghe.user))
-  type: cf-cli-resource
-- name: docker-hub-image
-  source:
-    password: ((ghe.textPassword))
-    repository: hub.comcast.net/atx-automation/nextgen-xhaven-test-plan-executor
-    username: ((ghe.user))
-  type: docker-image-resource
-- check_every: 1m
-  name: nextgen-xhaven-test-plan-executor-repo
-  source:
-    branch: XHAVEN-4562
-    password: ((ghe.password))
-    uri: https://github.comcast.com/atx-automation/NextGen-XHAVEN-test-plan-executor.git
-    username: ((ghe.user))
-  type: git
-- name: slack-alert
-  source:
-    url: ((slack_url))
-  type: slack-notification
