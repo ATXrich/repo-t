@@ -9,9 +9,8 @@ format = '\'{"commit": "%h", "date": "%ad", "subject": "%s", "body": "%b", "auth
 
 def parse_git_logs():
     # capture git commits 24 hours ago
-    git_logs = subprocess.run(
-        f'git log --since="24 hours ago" --format={format}', 
-        shell=True, capture_output=True, text=True).stdout.splitlines()
+    git_logs = subprocess.run(f'git log --since="24 hours ago" --format={format}', 
+                              shell=True, capture_output=True, text=True).stdout.splitlines()
 
     # build payload for dynamodb
     if len(git_logs) > 0:
@@ -22,8 +21,7 @@ def parse_git_logs():
             payload.append(dynamodb_item)
 
         # upload git logs to dynamodb
-        print(f'To be sent to DynamoDB: {json.dumps(payload)}')  # NEED TO REMOVE WHEN DONE
-        # write_to_dynamodb(payload)
+        write_to_dynamodb(json.dumps(payload))
         
     else:
         print("No new commits in last 24 hours.")
@@ -61,10 +59,12 @@ def search_git_log(regex, output):
 
 
 def write_to_dynamodb(payload):
-    dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
+    print(f'To be sent to DynamoDB: {payload}')  # NEED TO REMOVE WHEN DONE
 
-    table = dynamodb.Table('Repo_T_Execution_History')
-    table.put_item(Item=payload)
+    # dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
+
+    # table = dynamodb.Table('Repo_T_Execution_History')
+    # table.put_item(Item=payload)
 
 
 if __name__ == '__main__':
