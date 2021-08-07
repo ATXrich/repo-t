@@ -13,16 +13,16 @@ payload = []
 format = '\'{"commit": "%h", "date": "%ad", "subject": "%s", "body": "%b", "author": {"name": "%an", "email": "%aE"}}\''
 
 
-
 def parse_git_logs():
-    """Checks for new git commits in last 24 hours for given developer(s). Formats output and uploads to dynamodb table."""
+    """Checks for new git commits in last 24 hours for given developer(s). 
+       Formats output and uploads to dynamodb table."""
 
     # obtain developer names for build
     developers = get_developers_from_dynamodb()
     for developer in developers:
         # capture git commits 24 hours ago
         git_logs = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format}', 
-                                shell=True, capture_output=True, text=True).stdout.splitlines()
+                                  shell=True, capture_output=True, text=True).stdout.splitlines()
 
         # build payload for dynamodb
         if len(git_logs) > 0:
@@ -31,7 +31,7 @@ def parse_git_logs():
                 payload.append(dynamodb_item)
 
             # upload git logs to dynamodb
-            write_to_dynamodb(json.dumps(payload))
+            update_dynamodb(json.dumps(payload), developer)
             
         else:
             print(f'No new commits from {developer} in last 24 hours.')
@@ -39,7 +39,7 @@ def parse_git_logs():
 
 def get_developers_from_dynamodb() -> List:
     try:
-        dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000') # region_name='us-east-2')
+        dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')  # region_name='us-east-2')
         table = dynamo_db.Table(TABLE_NAME)
 
         response = table.get_item(
@@ -87,7 +87,7 @@ def search_git_log(regex: str, output: str) -> str:
         return ''
 
 
-def write_to_dynamodb(payload: str):
+def update_dynamodb(payload: str, developer: str):
     """Writes payload to dynamodb table."""
 
     # print(f'To be sent to DynamoDB: {payload}')  # NEED TO REMOVE WHEN DONE
@@ -95,27 +95,19 @@ def write_to_dynamodb(payload: str):
     dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
     try:
         table = dynamodb.Table(TABLE_NAME)
-        table.put_item(Item=payload)
-        print('Updated table with most recent git logs.')
-        return_item()   # DELETE WHEN DONE
+        response = table.update_item(
+            Key={
+                'build_number': BUILD_NUMBER
+            },
+            UpdateExpression="set git_logs=:g",
+            ExpressionAttributeValues={
+                ':g': payload
+            },
+            ReturnValues="UPDATED_NEW"
+        )
+        print(f'Updated table with most recent git logs for developer: {developer}')
     except Exception as e:
         print(f'error updating dynamadb: {e}')
-        exit(1)
-
-####### HELPER FUNC -- DELETE WHEN DONE ######
-def return_item():
-    try:
-        dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000') # region_name='us-east-2')
-        table = dynamo_db.Table(TABLE_NAME)
-
-        response = table.get_item(
-            Key={
-                "build_number": BUILD_NUMBER
-            }
-        )
-        print(response['Item'])
-    except Exception as e:
-        print(f'error fetching data from dynamadb: {e}')
         exit(1)
 
 
@@ -126,12 +118,3 @@ if __name__ == '__main__':
     else:
         print('error: missing build_number (eg. \"$ python parse_repo.py 10.07.00.000000-20210805.015637\")')
         exit(1)
-
-
-
-
-
-# 1) query db for branch name and developer name(s) DONE
-# 2) capture 24-hr git logs by developer DONE
-# 4) format logs 
-# 5) update db table w/ new logs 
