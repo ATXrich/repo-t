@@ -13,8 +13,6 @@ class TestParseRepo(unittest.TestCase):
             expected: str
 
         jira_regex = r'([a-zA-Z]+-\d+)'
-        build_regex = r'release/(\d.+\d)'
-        branch_regex = r'branch\s(.+)'
         testcases = [
             TestCase(
                 name='JIRA-ID: EMPTY SUBJECT', 
@@ -50,46 +48,6 @@ class TestParseRepo(unittest.TestCase):
                 name='JIRA-ID: NO COLON', 
                 input=[jira_regex, 'XHFW-1234 This is a test'.upper()],
                 expected='XHFW-1234'
-            ),
-            TestCase(
-                name='BUILD NUMBER 10.6', 
-                input=[build_regex, 'On branch release/10.6'], 
-                expected='10.6'
-            ),
-            TestCase(
-                name='BUILD NUMBER 10.6.1', 
-                input=[build_regex, 'On branch release/10.6.1'], 
-                expected='10.6.1'
-            ),
-            TestCase(
-                name='BUILD NUMBER 10.10.10', 
-                input=[build_regex, 'On branch release/10.10.10'], 
-                expected='10.10.10'
-            ),
-            TestCase(
-                name='BUILD NUMBER NONE', 
-                input=[build_regex, 'On branch release'], 
-                expected=''
-            ),
-            TestCase(
-                name='BRANCH RELEASE/10.6', 
-                input=[branch_regex, 'On branch release/10.6'], 
-                expected='release/10.6'
-            ),
-            TestCase(
-                name='BRANCH RELEASE/10.6.1', 
-                input=[branch_regex, 'On branch release/10.6.1'], 
-                expected='release/10.6.1'
-            ),
-            TestCase(
-                name='BRANCH RELEASE/10.10.10', 
-                input=[branch_regex, 'On branch release/10.10.10'], 
-                expected='release/10.10.10'
-            ),
-            TestCase(
-                name='BRANCH NONE', 
-                input=[branch_regex, 'On branch '], 
-                expected=''
             )
         ]
 
