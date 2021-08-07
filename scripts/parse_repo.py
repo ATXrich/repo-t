@@ -90,12 +90,33 @@ def search_git_log(regex: str, output: str) -> str:
 def write_to_dynamodb(payload: str):
     """Writes payload to dynamodb table."""
 
-    print(f'To be sent to DynamoDB: {payload}')  # NEED TO REMOVE WHEN DONE
+    # print(f'To be sent to DynamoDB: {payload}')  # NEED TO REMOVE WHEN DONE
 
-    # dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
+    dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
+    try:
+        table = dynamodb.Table(TABLE_NAME)
+        table.put_item(Item=payload)
+        print('Updated table with most recent git logs.')
+        return_item()   # DELETE WHEN DONE
+    except Exception as e:
+        print(f'error updating dynamadb: {e}')
+        exit(1)
 
-    # table = dynamodb.Table('Repo_T_Execution_History')
-    # table.put_item(Item=payload)
+####### HELPER FUNC -- DELETE WHEN DONE ######
+def return_item():
+    try:
+        dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000') # region_name='us-east-2')
+        table = dynamo_db.Table(TABLE_NAME)
+
+        response = table.get_item(
+            Key={
+                "build_number": BUILD_NUMBER
+            }
+        )
+        print(response['Item'])
+    except Exception as e:
+        print(f'error fetching data from dynamadb: {e}')
+        exit(1)
 
 
 if __name__ == '__main__':
