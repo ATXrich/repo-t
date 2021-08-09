@@ -134,7 +134,7 @@ class TestParseRepo(unittest.TestCase):
             TestCase(
                 name='VALID PAYLOAD', 
                 input=[{"git_logs": {"commit": "be84c43", "date": "Sat Aug 7 16:24:40 2021 -0500", "subject": "xhaven-5184: clean up test table", "body": "", "author": {"name": "rreed210", "email": "richard_reed@comcast.com"}, "jira_id": "XHAVEN-5184", "filenames": ["scripts/test/test_parse_repo.py"]}}, {"git_logs": {"commit": "4065637", "date": "Sat Aug 7 16:22:33 2021 -0500", "subject": "xhaven-5184 : removed helper method", "body": "", "author": {"name": "rreed210", "email": "richard_reed@comcast.com"}, "jira_id": "XHAVEN-5184", "filenames": ["scripts/parse_repo.py"]}}, {"git_logs": {"commit": "71b91fa", "date": "Sat Aug 7 15:46:12 2021 -0500", "subject": "xhaven-5184: adding helper func to show db update", "body": "", "author": {"name": "rreed210", "email": "richard_reed@comcast.com"}, "jira_id": "XHAVEN-5184", "filenames": ["scripts/parse_repo.py"]}}, {"git_logs": {"commit": "7f6887b", "date": "Sat Aug 7 15:34:50 2021 -0500", "subject": "XHAVEN-5184: adding git log by dev", "body": "", "author": {"name": "rreed210", "email": "richard_reed@comcast.com"}, "jira_id": "XHAVEN-5184", "filenames": ["scripts/parse_repo.py"]}}], 
-                expected='Updated table with most recent git logs.'
+                expected='Repo_T_Execution_History table updated with most recent logs.'
             )
         ]
         
