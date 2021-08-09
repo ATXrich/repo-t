@@ -12,16 +12,15 @@ format = '\'{"commit": "%h", "date": "%ad", "subject": "%s", "body": "%b", "auth
 
 
 def parse_git_logs(build_number: str) -> str:
-    """Checks for new git commits in last 24 hours for given developer(s). 
+    """Checks for new git commits in last 24 hours for given branch and developer(s). 
        Formats output and uploads to dynamodb table."""
 
     payload = []
 
-    # obtain developer names for build
     branch_name = get_value_from_dynamodb(build_number, 'branch_name')
     developers = get_value_from_dynamodb(build_number, 'developers')
     for developer in developers:
-        # capture git commits 24 hours ago
+        # capture git commits 24 hours ago for given developer and branch
         process = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
                                   shell=True, capture_output=True, text=True)
 
@@ -44,6 +43,8 @@ def parse_git_logs(build_number: str) -> str:
 
 
 def get_value_from_dynamodb(build_number: str, attribute: str):
+    """Returns value for a given dynamodb item attribute"""
+    
     try:
         dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')  # region_name='us-east-2')
         table = dynamo_db.Table(TABLE_NAME)
@@ -60,7 +61,7 @@ def get_value_from_dynamodb(build_number: str, attribute: str):
             print(f'{attribute} not found for build: {build_number}')
             exit(1)
     except Exception as e:
-        print(f'error fetching data from dynamadb: {e}')
+        print(f'error fetching data from dynamodb: {e}')
         exit(1)
 
 
@@ -73,18 +74,21 @@ def build_dynamodb_item(git_log: dict) -> dict:
     git_log['jira_id'] = search_git_log(r'([a-zA-Z]+-\d+)', git_log['subject']).upper()
       
     # capture changed files and add to log
-    git_log['filenames'] = get_changed_files(git_log['commit'])
+    git_log['filenames'] = get_filenames(git_log['commit'])
     
     dynamodb_item['git_logs'] = git_log
 
     return dynamodb_item
 
 
-def get_changed_files(commit: str) -> List:
-    changed_files = subprocess.run(
+def get_filenames(commit: str) -> List:
+    """Returns list of changed files in git commit"""
+
+    process = subprocess.run(
         [f'git show --pretty="format:" --name-only {commit}'], 
         shell=True, capture_output=True, text=True)
-    return changed_files.stdout.splitlines()
+    filenames = process.stdout.splitlines()
+    return filenames
 
 
 def search_git_log(regex: str, output: str) -> str:
