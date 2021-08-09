@@ -17,28 +17,13 @@ def parse_git_logs(build_number: str) -> str:
 
     payload = []
 
-    # ensure correct git branch checked out based on branch_name attribute
-    branch_name = get_value_from_dynamodb(build_number, 'branch_name')
-    # process = subprocess.run(f'git status', shell=True, capture_output=True, text=True)
-    # git_branch = search_git_log(r'On branch (.+)', process.stdout)
-    # if git_branch != branch_name:
-    #     print(f'BEFORE: git_branch {git_branch} branch_name {branch_name}')
-    #     process = subprocess.run(f'git checkout {branch_name}', shell=True, capture_output=True, text=True)
-    #     git_branch = search_git_log(r"Switched to branch '(.+)'.", process.stdout)
-    #     print(f'AFTER: git_branch {git_branch} branch_name {branch_name}')
-    #     if git_branch != branch_name:
-    #         print(f'error: could not checkout branch {branch_name}')
-    #         exit(1)
-
     # obtain developer names for build
+    branch_name = get_value_from_dynamodb(build_number, 'branch_name')
     developers = get_value_from_dynamodb(build_number, 'developers')
     for developer in developers:
         # capture git commits 24 hours ago
         process = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
                                   shell=True, capture_output=True, text=True)
-        # if process.stderr:
-        #     print(f'error getting logs: {process.stderr}')
-        #     exit(1)
 
         git_logs = process.stdout.splitlines()
         
@@ -48,14 +33,13 @@ def parse_git_logs(build_number: str) -> str:
         if len(git_logs) > 0:
             for git_log in git_logs:
                 dynamodb_item = build_dynamodb_item(json.loads(git_log))
-                print(dynamodb_item)
                 payload.append(dynamodb_item)
 
     # upload git logs to dynamodb
     if len(payload) > 0:
         response = update_dynamodb(json.dumps(payload), build_number)
     else:
-        response = f'Update to {TABLE_NAME} table not required.'
+        response = f'{TABLE_NAME} table update not required.'
     return response
 
 
@@ -130,7 +114,7 @@ def update_dynamodb(payload: str, build_number: str) -> str:
             ReturnValues="UPDATED_NEW"
         )
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            return f'Updated table with most recent git logs.'
+            return f'{TABLE_NAME} table updated with most recent logs.'
         return f"error updating dynamadb: Status Code {response['ResponseMetadata']['HTTPStatusCode']}"
     except Exception as e:
         return f'error updating dynamadb: {e}'
