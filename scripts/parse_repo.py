@@ -36,13 +36,13 @@ def parse_git_logs(build_number: str) -> str:
         # capture git commits 24 hours ago
         process = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
                                   shell=True, capture_output=True, text=True)
-        if process.stderr:
-            print(f'error getting logs: {process.stderr}')
-            exit(1)
+        # if process.stderr:
+        #     print(f'error getting logs: {process.stderr}')
+        #     exit(1)
 
         git_logs = process.stdout.splitlines()
         
-        print(f'Retrieved {len(git_logs)} commits in last 24 hours for {developer}.')
+        print(f'Retrieved {len(git_logs)} commits in last 24 hours for {developer} on branch {branch_name}.')
 
         # build payload for dynamodb
         if len(git_logs) > 0:
