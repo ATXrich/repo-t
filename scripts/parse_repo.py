@@ -19,21 +19,28 @@ def parse_git_logs(build_number: str) -> str:
 
     # ensure correct git branch checked out based on branch_name attribute
     branch_name = get_value_from_dynamodb(build_number, 'branch_name')
-    process = subprocess.run(f'git status', shell=True, capture_output=True, text=True)
-    git_branch = search_git_log(r'On branch (.+)', process.stdout)
-    if git_branch != branch_name:
-        process = subprocess.run(f'git checkout {branch_name}', shell=True, capture_output=True, text=True)
-        git_branch = search_git_log(r"Switched to branch '(.+)'.", process.stdout)
-        if git_branch != branch_name:
-            print(f'error: could not checkout branch {branch_name}')
-            exit(1)
+    # process = subprocess.run(f'git status', shell=True, capture_output=True, text=True)
+    # git_branch = search_git_log(r'On branch (.+)', process.stdout)
+    # if git_branch != branch_name:
+    #     print(f'BEFORE: git_branch {git_branch} branch_name {branch_name}')
+    #     process = subprocess.run(f'git checkout {branch_name}', shell=True, capture_output=True, text=True)
+    #     git_branch = search_git_log(r"Switched to branch '(.+)'.", process.stdout)
+    #     print(f'AFTER: git_branch {git_branch} branch_name {branch_name}')
+    #     if git_branch != branch_name:
+    #         print(f'error: could not checkout branch {branch_name}')
+    #         exit(1)
 
     # obtain developer names for build
     developers = get_value_from_dynamodb(build_number, 'developers')
     for developer in developers:
         # capture git commits 24 hours ago
-        git_logs = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format}', 
-                                  shell=True, capture_output=True, text=True).stdout.splitlines()
+        process = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
+                                  shell=True, capture_output=True, text=True)
+        if process.stderr:
+            print(f'error getting logs: {process.stderr}')
+            exit(1)
+
+        git_logs = process.stdout.splitlines()
         
         print(f'Retrieved {len(git_logs)} commits in last 24 hours for {developer}.')
 
