@@ -16,8 +16,17 @@ def parse_git_logs(build_number: str) -> str:
        Formats output and uploads to dynamodb table."""
 
     payload = []
+
+    # ensure correct git branch checked out based on branch_name attribute
+    branch_name = get_value_from_dynamodb(build_number, 'branch_name')
+    process = subprocess.run(f'git status', 
+                             shell=True, capture_output=True, text=True)
+    git_branch = search_git_log(r'On branch (.+)', process.stdout)
+    if git_branch != branch_name:
+        subprocess.run(f'git checkout {branch_name}', shell=True, capture_output=True, text=True)
+
     # obtain developer names for build
-    developers = get_developers_from_dynamodb(build_number)
+    developers = get_value_from_dynamodb(build_number, 'developers')
     for developer in developers:
         # capture git commits 24 hours ago
         git_logs = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format}', 
@@ -29,17 +38,18 @@ def parse_git_logs(build_number: str) -> str:
         if len(git_logs) > 0:
             for git_log in git_logs:
                 dynamodb_item = build_dynamodb_item(json.loads(git_log))
+                print(dynamodb_item)
                 payload.append(dynamodb_item)
 
     # upload git logs to dynamodb
     if len(payload) > 0:
         response = update_dynamodb(json.dumps(payload), build_number)
     else:
-        response = f'Does not require update to {TABLE_NAME} table'
+        response = f'Update to {TABLE_NAME} table not required.'
     return response
 
 
-def get_developers_from_dynamodb(build_number: str) -> List:
+def get_value_from_dynamodb(build_number: str, attribute: str):
     try:
         dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')  # region_name='us-east-2')
         table = dynamo_db.Table(TABLE_NAME)
@@ -49,11 +59,11 @@ def get_developers_from_dynamodb(build_number: str) -> List:
                 "build_number": build_number
             }
         )
-        developers = response['Item']['developers']
-        if len(developers) > 0:
-            return developers
+        attribute = response['Item'][attribute]
+        if len(attribute) > 0:
+            return attribute
         else:
-            print(f'developers not found for build: {build_number}')
+            print(f'{attribute} not found for build: {build_number}')
             exit(1)
     except Exception as e:
         print(f'error fetching data from dynamadb: {e}')
@@ -69,14 +79,18 @@ def build_dynamodb_item(git_log: dict) -> dict:
     git_log['jira_id'] = search_git_log(r'([a-zA-Z]+-\d+)', git_log['subject']).upper()
       
     # capture changed files and add to log
-    changed_files = subprocess.run(
-        [f'git show --pretty="format:" --name-only {git_log["commit"]}'], 
-        shell=True, capture_output=True, text=True)
-    git_log['filenames'] = changed_files.stdout.splitlines()
-
+    git_log['filenames'] = get_changed_files(git_log['commit'])
+    
     dynamodb_item['git_logs'] = git_log
 
     return dynamodb_item
+
+
+def get_changed_files(commit: str) -> List:
+    changed_files = subprocess.run(
+        [f'git show --pretty="format:" --name-only {commit}'], 
+        shell=True, capture_output=True, text=True)
+    return changed_files.stdout.splitlines()
 
 
 def search_git_log(regex: str, output: str) -> str:
