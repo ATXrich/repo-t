@@ -22,8 +22,13 @@ def parse_git_logs(build_number: str) -> str:
     process = subprocess.run(f'git status', 
                              shell=True, capture_output=True, text=True)
     git_branch = search_git_log(r'On branch (.+)', process.stdout)
+    print(f'GIT BRANCH = {git_branch}  BRANCH_NAME = {branch_name}')
     if git_branch != branch_name:
-        subprocess.run(f'git checkout {branch_name}', shell=True, capture_output=True, text=True)
+        process = subprocess.run(f'git checkout {branch_name}', shell=True, capture_output=True, text=True)
+        git_branch = search_git_log(r"Switched to branch '(.+)'.", process.stdout)
+        if git_branch != branch_name:
+            print('error: could not checkout branch {branch_name}')
+            exit(1)
 
     # obtain developer names for build
     developers = get_value_from_dynamodb(build_number, 'developers')
