@@ -22,7 +22,7 @@ def parse_git_logs(build_number: str) -> str:
     for developer in developers:
         # capture git commits 24 hours ago for given developer and branch
         process = subprocess.run(
-            f'git log -n 2 --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
+            f'git log --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
             shell=True, capture_output=True, text=True)
 
         git_logs = process.stdout.splitlines()
