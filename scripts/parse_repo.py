@@ -21,8 +21,9 @@ def parse_git_logs(build_number: str) -> str:
     developers = get_value_from_dynamodb(build_number, 'developers')
     for developer in developers:
         # capture git commits 24 hours ago for given developer and branch
-        process = subprocess.run(f'git log --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
-                                  shell=True, capture_output=True, text=True)
+        process = subprocess.run(
+            f'git log -n 2 --author={developer} --since="24 hours ago" --format={format} {branch_name}', 
+            shell=True, capture_output=True, text=True)
 
         git_logs = process.stdout.splitlines()
         
@@ -36,7 +37,7 @@ def parse_git_logs(build_number: str) -> str:
 
     # upload git logs to dynamodb
     if len(payload) > 0:
-        response = update_dynamodb(json.dumps(payload), build_number)
+        response = update_dynamodb(payload, build_number)
     else:
         response = f'{TABLE_NAME} table update not required.'
     return response
@@ -44,7 +45,7 @@ def parse_git_logs(build_number: str) -> str:
 
 def get_value_from_dynamodb(build_number: str, attribute: str):
     """Returns value for a given dynamodb item attribute"""
-    
+
     try:
         dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')  # region_name='us-east-2')
         table = dynamo_db.Table(TABLE_NAME)
@@ -66,19 +67,15 @@ def get_value_from_dynamodb(build_number: str, attribute: str):
 
 
 def build_dynamodb_item(git_log: dict) -> dict:
-    """Formats git log into dynamodb table item"""
-
-    dynamodb_item = {}
+    """Adds additional attributes to git log before updating dynamodb table item"""
 
     # add Jira ID to log
     git_log['jira_id'] = search_git_log(r'([a-zA-Z]+-\d+)', git_log['subject']).upper()
       
     # capture changed files and add to log
     git_log['filenames'] = get_filenames(git_log['commit'])
-    
-    dynamodb_item['git_logs'] = git_log
 
-    return dynamodb_item
+    return git_log
 
 
 def get_filenames(commit: str) -> List:
@@ -111,7 +108,7 @@ def update_dynamodb(payload: str, build_number: str) -> str:
             Key={
                 'build_number': build_number
             },
-            UpdateExpression="set git_logs=:g",
+            UpdateExpression="SET git_logs=:g",
             ExpressionAttributeValues={
                 ':g': payload
             },
