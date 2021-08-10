@@ -126,5 +126,5 @@ if __name__ == '__main__':
         response = parse_git_logs(str(sys.argv[1]))
         print(response)
     else:
-        print('error: missing build_number (eg. \"$ python parse_repo.py 10.07.00.000000-20210805.015637\")')
+        print('error: missing build_number argument (eg. \"$ python parse_repo.py 10.07.00.000000-20210805.015637\")')
         exit(1)
