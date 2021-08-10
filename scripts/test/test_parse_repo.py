@@ -2,8 +2,9 @@ import unittest
 from dataclasses import dataclass
 from typing import Dict, List
 import json
-import boto3
+import warnings
 from moto import mock_dynamodb2
+import boto3
 from botocore.exceptions import ClientError
 import parse_repo
 
@@ -14,34 +15,42 @@ class TestParseRepo(unittest.TestCase):
     build_number = ""
 
     def setUp(self, dynamodb=None):
+        warnings.filterwarnings(action="ignore", message="unclosed", category=ResourceWarning)
         if not dynamodb:
             dynamo_db = boto3.resource('dynamodb', region_name='us-east-2')
-        table_name = 'Repo_T_Execution_History_Test_Table'
-        self.table = dynamo_db.create_table(
-            TableName=table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'build_number',
-                    'KeyType': 'HASH'
+        try:
+            self.table = dynamo_db.create_table(
+                TableName='Repo_T_Execution_History_Test',
+                KeySchema=[
+                    {
+                        'AttributeName': 'build_number',
+                        'KeyType': 'HASH'
+                    }
+                ],
+                AttributeDefinitions=[
+                    {
+                        'AttributeName': 'build_number',
+                        'AttributeType': 'S'
+                    }
+                ],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 1,
+                    'WriteCapacityUnits': 1
                 }
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'build_number',
-                    'AttributeType': 'S'
-                }
-            ])
+            )
 
-        with open('test/data/data.json') as json_file:
-            data = json.load(json_file)
-            self.table_item = data
-            self.build_number = data["build_number"]
-        self.table.put_item(Item=data)
+            with open('test/data/test.json') as json_file:
+                data = json.load(json_file)
+                self.table_item = data
+                self.build_number = data["build_number"]
+            self.table.put_item(Item=data)
+        except Exception as e:
+            print(f'{e}')
 
     def tearDown(self):
         self.table.delete()
         self.dynamodb = None
-
+        
     def test_search_git_log(self):
         @dataclass
         class TestCase:
@@ -111,7 +120,7 @@ class TestParseRepo(unittest.TestCase):
             TestCase(
                 name='HAPPY PATH', 
                 input={'commit': '38974ba', 'date': 'Sun Aug 8 15:46:01 2021 -0500', 'subject': 'xhaven-5184: dynamodb tests', 'body': '', 'author': {'name': 'rreed210', 'email': 'richard_reed@comcast.com'}},
-                expected={'git_logs': {'commit': '38974ba', 'date': 'Sun Aug 8 15:46:01 2021 -0500', 'subject': 'xhaven-5184: dynamodb tests', 'body': '', 'author': {'name': 'rreed210', 'email': 'richard_reed@comcast.com'}, 'jira_id': 'XHAVEN-5184', 'filenames': ['scripts/test/test_parse_repo.py']}}
+                expected={'commit': '38974ba', 'date': 'Sun Aug 8 15:46:01 2021 -0500', 'subject': 'xhaven-5184: dynamodb tests', 'body': '', 'author': {'name': 'rreed210', 'email': 'richard_reed@comcast.com'}, 'jira_id': 'XHAVEN-5184', 'filenames': ['scripts/test/test_parse_repo.py']}
             )
         ]
         
