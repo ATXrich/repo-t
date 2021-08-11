@@ -7,18 +7,30 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from botocore import endpoint
 
-TABLE_NAME = 'Repo_T_Execution_History'
+repo_t_tables = [
+    {
+        'table_name': 'Repo_T_Gerrit_CPE_Branch_Details',
+        'p_key': 'gerrit_branch_name'
+
+    },
+    {
+        'table_name': 'Repo_T_Execution_History',
+        'p_key': 'build_number'
+    }
+]
+
+
 format = '\'{"commit": "%h", "date": "%ad", "subject": "%s", "body": "%b", "author": {"name": "%an", "email": "%aE"}}\''
 
 
-def parse_git_logs(build_number: str) -> str:
+def parse_git_logs(branch_name: str) -> str:
     """Checks for new git commits in last 24 hours for given branch and developer(s). 
        Formats output and uploads to dynamodb table."""
 
     payload = []
 
-    branch_name = get_value_from_dynamodb(build_number, 'branch_name')
-    developers = get_value_from_dynamodb(build_number, 'developers')
+    # branch_name = get_value_from_dynamodb(repo_t_tables[0]['table_name'], repo_t_tables[0]['p_key'], 'gerrit_branch_name')
+    developers = get_value_from_dynamodb(repo_t_tables[0]['table_name'], repo_t_tables[0]['p_key'], branch_name, 'developers')
     for developer in developers:
         # capture git commits 24 hours ago for given developer and branch
         process = subprocess.run(
@@ -29,37 +41,37 @@ def parse_git_logs(build_number: str) -> str:
         
         print(f'Retrieved {len(git_logs)} commits in last 24 hours for {developer} on branch {branch_name}.')
 
-        # build payload for dynamodb
-        if len(git_logs) > 0:
-            for git_log in git_logs:
-                dynamodb_item = build_dynamodb_item(json.loads(git_log))
-                payload.append(dynamodb_item)
+    #     # build payload for dynamodb
+    #     if len(git_logs) > 0:
+    #         for git_log in git_logs:
+    #             dynamodb_item = build_dynamodb_item(json.loads(git_log))
+    #             payload.append(dynamodb_item)
 
-    # upload git logs to dynamodb
-    if len(payload) > 0:
-        response = update_dynamodb(payload, build_number)
-    else:
-        response = f'{TABLE_NAME} table update not required.'
-    return response
+    # # upload git logs to dynamodb
+    # if len(payload) > 0:
+    #     response = update_dynamodb('Repo_T_Execution_History', build_number, payload)
+    # else:
+    #     response = f'{TABLE_NAME} table update not required.'
+    # return response
 
 
-def get_value_from_dynamodb(build_number: str, attribute: str):
+def get_value_from_dynamodb(table_name: str, primary_key: str, pkey_value: str, attribute: str):
     """Returns value for a given dynamodb item attribute"""
 
     try:
         dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')  # region_name='us-east-2')
-        table = dynamo_db.Table(TABLE_NAME)
+        table = dynamo_db.Table(table_name)
 
         response = table.get_item(
             Key={
-                "build_number": build_number
+                primary_key: pkey_value
             }
         )
         attribute = response['Item'][attribute]
         if len(attribute) > 0:
             return attribute
         else:
-            print(f'{attribute} not found for build: {build_number}')
+            print(f'{attribute} not found for key: {primary_key}')
             exit(1)
     except Exception as e:
         print(f'error fetching data from dynamodb: {e}')
@@ -78,7 +90,7 @@ def build_dynamodb_item(git_log: dict) -> dict:
     return git_log
 
 
-def get_filenames(commit: str) -> List:
+def get_filenames(commit: str) -> list:
     """Returns list of changed files in git commit"""
 
     process = subprocess.run(
@@ -98,12 +110,12 @@ def search_git_log(regex: str, output: str) -> str:
         return ''
 
 
-def update_dynamodb(payload: str, build_number: str) -> str:
+def update_dynamodb(table_name: str, build_number: str, payload: list) -> str:
     """Writes payload to dynamodb table."""
 
     dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
     try:
-        table = dynamodb.Table(TABLE_NAME)
+        table = dynamodb.Table(table_name)
         response = table.update_item(
             Key={
                 'build_number': build_number
@@ -115,7 +127,8 @@ def update_dynamodb(payload: str, build_number: str) -> str:
             ReturnValues="UPDATED_NEW"
         )
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            return f'{TABLE_NAME} table updated with most recent logs.'
+            # print(payload[0])
+            return f'{table_name} table updated with most recent logs.'
         return f"error updating dynamadb: Status Code {response['ResponseMetadata']['HTTPStatusCode']}"
     except Exception as e:
         return f'error updating dynamadb: {e}'
@@ -126,5 +139,5 @@ if __name__ == '__main__':
         response = parse_git_logs(str(sys.argv[1]))
         print(response)
     else:
-        print('error: missing build_number argument (eg. \"$ python parse_repo.py 10.07.00.000000-20210805.015637\")')
+        print('error: missing gerrit_branch_name argument (eg. \"$ python parse_repo.py release/10.7\")')
         exit(1)
