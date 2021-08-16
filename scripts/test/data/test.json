@@ -1,46 +1,13 @@
-{
-    "branch_name": "cpe-snapshots",
-    "build_number": "10.07.00.000000-20210805.015637",
-    "current_page": 1,
-    "date_time": "2021-08-05",
-    "developers": [
-      "rreed210",
-      "Micah Koch"
-    ],
-    "fail_test_cases": "0",
-    "git_logs": [
-      {
-        "commit": "6c32ba9",
-        "committer": {
-          "email": "richard_reed@comcast.com",
-          "name": "rreed210"
-        },
-        "date": "1627589242",
-        "filenames": [
-          "scripts/parse-repo.py"
-        ],
-        "jira_id": "XHaven-5184",
-        "subject": "XHaven-5184: clean up script"
-      },
-      {
-        "commit": "6c32ba9",
-        "committer": {
-          "email": "richard_reed@comcast.com",
-          "name": "rreed210"
-        },
-        "date": "1627589242",
-        "filenames": [
-          "scripts/parse-repo.py"
-        ],
-        "jira_id": "XHaven-5184",
-        "subject": "XHaven-5184: clean up script"
-      }
-    ],
-    "inventory_board": "Onsite_Rack_8_Board_3",
-    "nexus_url": "https://nexus.comcast.com/nexus/service/rest/repository/browse/cpe-snapshots",
-    "page_size": 50,
-    "pass_test_cases": "50",
-    "test_cycle": "testing_cycle",
-    "total_pages": 3,
-    "total_test_cases": "150"
+{   
+  "build_version": "10.07.00.000000",
+  "developers": [
+    "john_elderton",
+    "rreed210",
+    "thomas_lea"
+  ],
+  "gerrit_branch_name": "release/1.0",
+  "gerrit_url": "https://gerrit.teamccp.com/plugins/gitiles/rdk/components/cpc/zilker-client",
+  "inventory_board": "Onsite_Rack_8_Board_3",
+  "nexus_url": "https://nexus.comcast.com/nexus/service/rest/repository/browse/cpe-snapshots"
 }
+
