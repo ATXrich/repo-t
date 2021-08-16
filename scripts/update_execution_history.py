@@ -53,7 +53,6 @@ def build_dynamodb_payload(cpe_branch_details: dict) -> dict:
             shell=True, capture_output=True, text=True)
 
         git_logs = process.stdout.splitlines()
-        print(git_logs)
         
         print(f'Retrieved {len(git_logs)} commits in last 24 hours for {developer}' 
               f' on branch {cpe_branch_details["gerrit_branch_name"]}.')
@@ -112,8 +111,6 @@ def format_git_logs(git_log: dict) -> dict:
       
     # capture changed files and add to log
     git_log['filenames'] = get_filenames(git_log['commit'])
-
-    print(git_log)
 
     return git_log
 
