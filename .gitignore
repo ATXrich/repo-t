@@ -1,6 +1,7 @@
 venv/
 local/
 .vscode/
+core/
 __pycache__
 *.pyc
 .DS_Store
