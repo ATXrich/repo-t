@@ -1,13 +1,10 @@
-{   
-  "build_version": "10.07.00.000000",
-  "developers": [
-    "john_elderton",
-    "rreed210",
-    "thomas_lea"
-  ],
-  "gerrit_branch_name": "release/1.0",
-  "gerrit_url": "https://gerrit.teamccp.com/plugins/gitiles/rdk/components/cpc/zilker-client",
-  "inventory_board": "Onsite_Rack_8_Board_3",
-  "nexus_url": "https://nexus.comcast.com/nexus/service/rest/repository/browse/cpe-snapshots"
-}
-
+[
+  {   
+      "build_version": "10.07.00.000000",
+      "developers": ["John Elderton", "Weston Boyd","Thomas Lea"],
+      "gerrit_branch_name": "release/10.7",
+      "gerrit_url": "https://rdkgerrithub.stb.r53.xcal.tv/a/xhfw/core",
+      "inventory_board": "Onsite_Rack_8_Board_3",
+      "nexus_url": "https://nexus.comcast.com/nexus/service/rest/repository/browse/cpe-snapshots"
+  }
+]
