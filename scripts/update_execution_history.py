@@ -44,7 +44,7 @@ def get_item_from_dynamodb(table_name: str, primary_key: str, pkey_value: str):
     """Returns value for a given dynamodb item attribute"""
 
     try:
-        dynamo_db = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')  # region_name='us-east-2') 
+        dynamo_db = boto3.resource('dynamodb', region_name='us-east-2') 
         table = dynamo_db.Table(table_name)
 
         response = table.get_item(
@@ -208,7 +208,7 @@ def update_dynamodb_table(table_name: str, payload: list) -> str:
     if not payload:
         return 'Nothing to update'
 
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-2')  # endpoint_url="http://localhost:8000") 
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-2')
     try:
         table = dynamodb.Table(table_name)
         for item in payload:
