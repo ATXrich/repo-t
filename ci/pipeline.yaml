@@ -20,25 +20,25 @@ resources:
     repository: frolvlad/alpine-python3
     tag: latest
   type: docker-image-resource
-- name: xhfw/core-repo
-  type: git
-  source:
-    uri: rreed210@rdkgerrithub.stb.r53.xcal.tv/a/xhfw/core
-    branch: master
-    username: rreed210
-    password: 
+# - name: xhfw/core-repo
+#   type: git
+#   source:
+#     uri: rreed210@rdkgerrithub.stb.r53.xcal.tv/a/xhfw/core
+#     branch: master
+#     username: rreed210
+#     password: 
     # git_config:
     # - name: core.bigFileThreshold
     #   value: 10m
     disable_ci_skip: true
-# - check_every: 1m
-#   name: nextgen-xhaven-test-plan-executor-repo
-#   source:
-#     branch: XHAVEN-4562
-#     password: ((ghe.password))
-#     uri: https://github.comcast.com/atx-automation/NextGen-XHAVEN-test-plan-executor.git
-#     username: ((ghe.user))
-#   type: git
+- check_every: 1m
+  name: repo-t-repo
+  source:
+    branch: release/1.0
+    password: ((ghe.password))
+    uri: https://github.comcast.com/atx-automation/NextGen-XHAVEN-test-plan-executor.git
+    username: ((ghe.user))
+  type: git
 # - name: slack-alert
 #   source:
 #     url: ((slack_url))
